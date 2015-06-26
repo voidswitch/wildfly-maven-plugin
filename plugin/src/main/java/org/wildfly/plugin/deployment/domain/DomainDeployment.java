@@ -23,6 +23,7 @@
 package org.wildfly.plugin.deployment.domain;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,7 @@ public class DomainDeployment implements Deployment {
     private final DomainClient client;
     private final Domain domain;
     private final String name;
+    private final String commonName;
     private final Type type;
     private final String matchPattern;
     private final MatchPatternStrategy matchPatternStrategy;
@@ -68,16 +70,18 @@ public class DomainDeployment implements Deployment {
      * @param domain               the domain information
      * @param content              the content for the deployment
      * @param name                 the name of the deployment, if {@code null} the name of the content file is used
+     * @param commonName           the runtime-name of the deployment, if {@code null} name is used
      * @param type                 the deployment type
      * @param matchPattern         the pattern for matching multiple artifacts, if {@code null} the name is used.
      * @param matchPatternStrategy the strategy for handling multiple artifacts.
      */
-    public DomainDeployment(final DomainClient client, final Domain domain, final File content, final String name, final Type type,
-                            final String matchPattern, final MatchPatternStrategy matchPatternStrategy) {
+    public DomainDeployment(final DomainClient client, final Domain domain, final File content, final String name, final String commonName,
+                            final Type type, final String matchPattern, final MatchPatternStrategy matchPatternStrategy) {
         this.content = content;
         this.client = client;
         this.domain = domain;
         this.name = (name == null ? content.getName() : name);
+        this.commonName = (commonName == null ? name : commonName);
         this.type = type;
         this.matchPattern = matchPattern;
         this.matchPatternStrategy = matchPatternStrategy;
@@ -96,9 +100,9 @@ public class DomainDeployment implements Deployment {
      *
      * @return the new deployment
      */
-    public static DomainDeployment create(final DomainClient client, final Domain domain, final File content, final String name, final Type type,
-                                          final String matchPattern, final MatchPatternStrategy matchPatternStrategy) {
-        return new DomainDeployment(client, domain, content, name, type, matchPattern, matchPatternStrategy);
+    public static DomainDeployment create(final DomainClient client, final Domain domain, final File content, final String name, final String commonName,
+                                          final Type type, final String matchPattern, final MatchPatternStrategy matchPatternStrategy) {
+        return new DomainDeployment(client, domain, content, name, commonName, type, matchPattern, matchPatternStrategy);
     }
 
     private DeploymentPlan createPlan(final DeploymentPlanBuilder builder) throws IOException, DuplicateDeploymentNameException, DeploymentFailureException {
@@ -106,19 +110,19 @@ public class DomainDeployment implements Deployment {
         List<String> existingDeployments = DeploymentInspector.getDeployments(client, name, matchPattern);
         switch (type) {
             case DEPLOY: {
-                completeBuilder = builder.add(name, content).andDeploy();
+                completeBuilder = builder.add(name, commonName, new FileInputStream(content)).andDeploy();
                 break;
             }
             case FORCE_DEPLOY: {
                 if (existingDeployments.contains(name)) {
-                    completeBuilder = builder.replace(name, content);
+                    completeBuilder = builder.replace(name, commonName, new FileInputStream(content));
                 } else {
-                    completeBuilder = builder.add(name, content).andDeploy();
+                    completeBuilder = builder.add(name, commonName, new FileInputStream(content)).andDeploy();
                 }
                 break;
             }
             case REDEPLOY: {
-                completeBuilder = builder.replace(name, content);
+                completeBuilder = builder.replace(name, commonName, new FileInputStream(content));
                 break;
             }
             case UNDEPLOY: {

@@ -64,6 +64,12 @@ abstract class AbstractDeployment extends AbstractServerConnection {
     protected String name;
 
     /**
+     * Specifies the runtime-name used for the deployment.
+     */
+    @Parameter
+    protected String commonName;
+
+    /**
      * Commands to run before the deployment
      */
     @Parameter(alias = "before-deployment")
@@ -138,7 +144,7 @@ abstract class AbstractDeployment extends AbstractServerConnection {
             final Deployment deployment;
             if (client instanceof DomainClient) {
                 final DomainClient domainClient = (DomainClient) client;
-                deployment = DomainDeployment.create(domainClient, domain, file(), name, getType(), matchPattern, matchPatternStrategy);
+                deployment = DomainDeployment.create(domainClient, domain, file(), name, commonName, getType(), matchPattern, matchPatternStrategy);
             } else {
                 deployment = StandaloneDeployment.create(client, file(), name, getType(), matchPattern, matchPatternStrategy);
             }
